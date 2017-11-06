@@ -46,7 +46,7 @@ loc_name %>%
 	osmdata_sp() ->
 loc_coast_sp
 
-# we want the coastline to be a polygon, but we will need a point for 
+# we want the coastline to be a polygon, but we will need a point for
 # the lowerlefthand (ll) corner. Let's extract coordinates from perros-g:
 loc_name %>%
 	getbb() %>%
@@ -56,9 +56,9 @@ ll
 loc_coast_sp %>%
 	.$osm_lines %>%
 	# merge the 15 lines that make up the coast to one line:
-	gLineMerge() %>% 
+	gLineMerge() %>%
 	# make the lines a polygon
-	SpatialLines2PolySet() %>% 
+	SpatialLines2PolySet() %>%
 	fortify %>%
 	tbl_df %>%
 	# just a hack for now, adding two points to make the poly a better shape
@@ -67,7 +67,7 @@ loc_coast_sp %>%
 loc_coast_poly
 
 # so the data we have now is:
-loc_land
+loc_coast_poly
 loc_highway_lines
 
 # we need to import classes of highways 1 by 1,
@@ -77,7 +77,7 @@ loc_highway_lines
 # perhaps we also need to convert long/lat to UTMs
 
 # let's plot this....
-	
+
 #########################################################
 #####                                   PLOT & SAVE IMAGE                               ######
 #########################################################
@@ -122,30 +122,30 @@ theme_minimalmap = function(
 			panel.border = element_rect(fill = NA, color = border),
 			plot.margin	 = margin(mar, mar, mar, mar, "in"),
 			# background colors
-			plot.background = element_rect(fill = "white", color = NA), 
-			panel.background = element_rect(fill = water, color = NA), 
+			plot.background = element_rect(fill = "white", color = NA),
+			panel.background = element_rect(fill = water, color = NA),
 			# grid lines
 			panel.grid.minor =  element_blank(),
 			panel.grid.major = element_line(color = gridline, size = 0.3))
 }
-	
+
 # function to make custom gridline breaks:
 myBreaks = function(x){
 	breaks = seq(from=min(x),to=max(x),by=grid_degrees)
 	names(breaks) = attr(breaks,"labels")
 	breaks
 }
-		
-##---- BASE MAP----##		
+
+##---- BASE MAP----##
 base_map = ggplot() + theme_minimalmap() +
 		coord_equal(expand = FALSE) +
 		scale_y_continuous(breaks=myBreaks) +
 		scale_x_continuous(breaks=myBreaks)
 
 # FINAL MAP, where we add the data:
-base_map + 
+base_map +
 	# data:
-	geom_polygon(data=loc_land,aes(x=X,y=Y),fill=col_land)+
+	geom_polygon(data=loc_coast_poly,aes(x=X,y=Y),fill=col_land)+
 	geom_path(data=loc_highway_lines,aes(x=long, y=lat, group=group),colour=col_road)
 
 # see how it looks as a png, with auto-selected dimensions for now:
@@ -153,4 +153,3 @@ base_map +
 ggsave(filename=
 	paste0("../output/perros_testmap_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
 )
-	
