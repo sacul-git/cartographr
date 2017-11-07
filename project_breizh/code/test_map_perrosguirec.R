@@ -1,7 +1,6 @@
 # TEST RUN - map of Perros-Guirec
 # Christmas 2017 Map of Brittany
 # By Lucas and Robyn
-# Received Loud and Clear. Over. Sending New Message. Over.
 
 # required libraries:
 req.libs = c("tidyverse", "osmdata", "rgeos", "maptools","PBSmapping")
