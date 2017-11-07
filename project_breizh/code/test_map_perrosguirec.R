@@ -1,7 +1,7 @@
 # TEST RUN - map of Perros-Guirec
 # Christmas 2017 Map of Brittany
 # By Lucas and Robyn
-# Secret message to Lucas to test if we understand how the F git works...
+# Received Loud and Clear. Over. Sending New Message. Over.
 
 # required libraries:
 req.libs = c("tidyverse", "osmdata", "rgeos", "maptools","PBSmapping")
