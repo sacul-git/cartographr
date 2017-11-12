@@ -32,19 +32,28 @@ target_vals = c('motorway', 'trunk', 'primary',
 	'secondary', 'tertiary', 'unclassified',
 	'residential','service')
 
-# however, the value is stored in the column "highway"! 
-# note: polygons end up in the roads because of connected lines like roundabouts
+# however, the value is stored in the column "highway" - YAY!
 loc_name %>%
 		opq(bbox = .) %>%
 		add_osm_feature(key = 'highway') %>%
 		osmdata_sf() ->
-all_roads_sfcollection
-	
-# see the data
-ggplot() +
-	geom_sf(data=all_roads_sfcollection$osm_lines, aes(color=highway)) +
-	geom_sf(data=all_roads_sfcollection$osm_polygons, aes(color=highway), fill=NA) +
-	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
+roads_sfc
+
+# in this example, roads are stored as lines and polygons.
+# polygons end up in the roads because of connected lines like roundabouts.
+# let's combine these two categories and get rid of excess columns
+rbind(roads_sfc$osm_lines, roads_sfc$osm_polygons) %>%
+	select(highway, geometry) ->
+roads_gg	
+# roads ready for ggplot
+
+# have a look
+roads_gg %>%
+	ggplot(.) +
+		geom_sf(size=1, fill=NA, aes(color=highway)) + 
+		coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
+
+
 	
 # Let's try to get the coastline
 # @FIX: the following coast part needs to be updated for use with SF!
@@ -155,8 +164,7 @@ base_map +
 	# data:
 	#geom_polygon(data=loc_coast_poly,aes(x=X,y=Y),fill=col_land)+
 	#geom_path(data=loc_highway_lines,aes(x=long, y=lat, group=group),colour=col_road) +
-	geom_sf(data=all_roads_sfcollection$osm_lines, aes(color=highway)) +
-	geom_sf(data=all_roads_sfcollection$osm_polygons, aes(color=highway), fill=NA) +
+	geom_sf(data=roads_gg, aes(color=highway)) +
 	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
 	
 
