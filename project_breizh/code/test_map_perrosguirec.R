@@ -3,7 +3,7 @@
 # By Lucas and Robyn
 
 # required libraries:
-req.libs = c("tidyverse", "osmdata", "rgeos", "maptools","PBSmapping")
+req.libs = c("tidyverse", "osmdata", "sf", "rgeos", "maptools","PBSmapping")
 
 # load them, install if needed:
 new.libs = req.libs[!(req.libs %in% installed.packages()[, "Package"])]
@@ -11,40 +11,49 @@ if (length(new.libs)) install.packages(new.libs)
 sapply(req.libs, require, character.only = TRUE)
 
 #########################################################
-#######                                    GET THE MAP DATA                                #########
+#######                       GET THE MAP DATA                                #########
 #########################################################
 
 # let's build a map with a smaller test location
 loc_name = "perros guirec, france"
 getbb(loc_name)
 
-# this is how we get data, as an example, this is highway data:
-# download test location highways as sp (spacial poloygon)
+# All road data: download location roads as sf (special features)
+# thanks to http://strimas.com/r/tidy-sf/ for the tutorial on SF in R
+# the value for roads in osm is highway.
+# Import each road type as a separate object.
+# For details, see: http://wiki.openstreetmap.org/wiki/Map_Features
+
+# see all available values within the key highway
+available_tags('highway')
+
+# these are ordered by importance/size. see link above.
+target_vals = c('motorway', 'trunk', 'primary',
+	'secondary', 'tertiary', 'unclassified',
+	'residential','service')
+
+# however, the value is stored in the column "highway"! 
+# note: polygons end up in the roads because of connected lines like roundabouts
 loc_name %>%
-	opq(bbox = .) %>%
-    add_osm_feature(key = 'highway') %>%
-    osmdata_sp() ->
-loc_highway_sp
-
-# extract the lines from the sp
-loc_highway_sp %>%
-	.$osm_lines %>%
-	fortify %>%
-	tbl_df ->
-loc_highway_lines
-
-# check data by plotting the test location's highways
-loc_highway_lines %>%
-	ggplot(aes(x=long, y=lat, group=group))+
-	geom_path(color="black")+
-	coord_equal() # this is needed for all maps!
-
+		opq(bbox = .) %>%
+		add_osm_feature(key = 'highway') %>%
+		osmdata_sf() ->
+all_roads_sfcollection
+	
+# see the data
+ggplot() +
+	geom_sf(data=all_roads_sfcollection$osm_lines, aes(color=highway)) +
+	geom_sf(data=all_roads_sfcollection$osm_polygons, aes(color=highway), fill=NA) +
+	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
+	
 # Let's try to get the coastline
+# @FIX: the following coast part needs to be updated for use with SF!
+
 loc_name %>%
 	opq(bbox = .) %>%
 	add_osm_feature(key = 'natural', value = 'coastline') %>%
-	osmdata_sp() ->
-loc_coast_sp
+	osmdata_sf() ->
+loc_coast_sf
 
 # we want the coastline to be a polygon, but we will need a point for
 # the lowerlefthand (ll) corner. Let's extract coordinates from perros-g:
@@ -53,7 +62,7 @@ loc_name %>%
 	.[,1] ->
 ll
 
-loc_coast_sp %>%
+loc_coast_sf %>%
 	.$osm_lines %>%
 	# merge the 15 lines that make up the coast to one line:
 	gLineMerge() %>%
@@ -67,8 +76,8 @@ loc_coast_sp %>%
 loc_coast_poly
 
 # so the data we have now is:
-loc_coast_poly
-loc_highway_lines
+# loc_coast_poly
+all_roads_sfcollection
 
 # we need to import classes of highways 1 by 1,
 # so that we can have diff. line thicknesses
@@ -83,7 +92,6 @@ loc_highway_lines
 #########################################################
 
 ##---- SET OPTIONS ----##
-
 # Final dimensions (in inches)
 width_in = 24
 height_in = 18
@@ -137,17 +145,24 @@ myBreaks = function(x){
 }
 
 ##---- BASE MAP----##
-base_map = ggplot() + theme_minimalmap() +
-		coord_equal(expand = FALSE) +
-		scale_y_continuous(breaks=myBreaks) +
-		scale_x_continuous(breaks=myBreaks)
+base_map = ggplot() + theme_minimalmap() #+
+		#coord_equal(expand = FALSE) +
+		# scale_y_continuous(breaks=myBreaks) +
+		# scale_x_continuous(breaks=myBreaks)
 
 # FINAL MAP, where we add the data:
 base_map +
 	# data:
-	geom_polygon(data=loc_coast_poly,aes(x=X,y=Y),fill=col_land)+
-	geom_path(data=loc_highway_lines,aes(x=long, y=lat, group=group),colour=col_road)
+	#geom_polygon(data=loc_coast_poly,aes(x=X,y=Y),fill=col_land)+
+	#geom_path(data=loc_highway_lines,aes(x=long, y=lat, group=group),colour=col_road) +
+	geom_sf(data=all_roads_sfcollection$osm_lines, aes(color=highway)) +
+	geom_sf(data=all_roads_sfcollection$osm_polygons, aes(color=highway), fill=NA) +
+	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
+	
 
+	
+	
+	
 # see how it looks as a png, with auto-selected dimensions for now:
 # filename includes date and time
 ggsave(filename=
