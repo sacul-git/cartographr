@@ -8,29 +8,28 @@ req.libs = c("tidyverse", "osmdata", "sf", "rgeos", "maptools","PBSmapping")
 # load them, install if needed:
 new.libs = req.libs[!(req.libs %in% installed.packages()[, "Package"])]
 if (length(new.libs)) install.packages(new.libs)
-sapply(req.libs, require, character.only = TRUE)
+sapply(req.libs, require, character.only = TRUE, quietly=TRUE)
 
 # note: need ggplot2 version  2.2.1.9000 or higher to use sf_geom. May need to install development version:
 # devtools::install_github("tidyverse/ggplot2")
 
-#########################################################
-#######                       GET THE MAP DATA                                #########
-#########################################################
+#====
+#  GET THE MAP DATA 
+#====
 
 # let's build a map with a smaller test location
 loc_name = "perros guirec, france"
-getbb(loc_name)
+getbb(loc_name) 
 
 # All road data: download location roads as sf (special features)
 # thanks to http://strimas.com/r/tidy-sf/ for the tutorial on SF in R
 # the value for roads in osm is highway.
 # Import each road type as a separate object.
 # For details, see: http://wiki.openstreetmap.org/wiki/Map_Features
+# Ex: see all available values within the key highway
+# available_tags('highway')
 
 ## ROADS
-# see all available values within the key highway
-available_tags('highway')
-
 # these are ordered by importance/size. see link above.
 target_vals = c('motorway', 'trunk', 'primary',
 	'secondary', 'tertiary', 'unclassified',
@@ -42,6 +41,9 @@ loc_name %>%
 		add_osm_feature(key = 'highway') %>%
 		osmdata_sf() ->
 roads_sfc
+
+# extract the crs for later use...
+myCrs = roads_sfc$osm_lines %>% st_crs
 
 # in this example, roads are stored as lines and polygons.
 # polygons end up in the roads because of connected lines like roundabouts.
@@ -55,7 +57,7 @@ roads_gg
 roads_gg %>%
 	ggplot(.) +
 		geom_sf(size=1, fill=NA, aes(color=highway)) + 
-		coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
+		coord_sf(crs = "+proj=utm +zone=30U +datum=WGS84")
 		
 ### COASTLINE / LAND MASS
 # Let's try to get the coastline, seems to work best with admin_level 2 (federal boundaries...)
@@ -129,19 +131,26 @@ waterpolys_gg
 #####                                   PLOT & SAVE IMAGE                               ######
 #########################################################
 
+# get the CRS from another sf object
+crsNorm = st_crs(waterpolys_gg)$proj4string
+# choose a projection that we will attempt to use to get a 24x18 image
+myProj = "+proj=utm +zone=30U +datum=WGS84"
+
 ##---- SET OPTIONS ----##
 # Final dimensions (in inches)
 width_in = 24
 height_in = 18
 
-# desired long/lat sfor map of Britanny:
-xmin = -5.383
-xmax = -0.791
-ymax = 49.139
-xy
+# margins (inches)
+print_mar = 0.5
+
+# desired long/lat sfor map of Britanny (choosen manually on osm website):
+xmin = -5.702
+xmax = -0.890
+ymax = 49.038
 # need ymin, must project to UTM first...
+
 xy = cbind(c(xmin, xmax), c(ymax, ymax))
-myProj = "+proj=utm +zone=30U +datum=WGS84 +units=km"
 xy_utm = rgdal::project(xy,myProj)
 
 xmin_utm = xy_utm[1,1]
@@ -165,39 +174,22 @@ loc_name %>%
 bb_loc
 
 # a little function to take a bounding box in the format above, and make it coordinates for a polygon
-bb_to_poly = function(bb,minrow="min",maxrow="max",xcol="x",ycol="y"){
-	coords = c(
-		bb[minrow,xcol],bb[minrow,ycol],
+bb_to_poly = function(bb,minrow="min",maxrow="max",xcol="x",ycol="y",crs = crsNorm, name){
+	c(	bb[minrow,xcol],bb[minrow,ycol],
 		bb[minrow,xcol],bb[maxrow,ycol],
 		bb[maxrow,xcol],bb[maxrow,ycol],
 		bb[maxrow,xcol],bb[minrow,ycol],
-		bb[minrow,xcol],bb[minrow,ycol])
-	matrix(coords, ncol=2, byrow=TRUE)
+		bb[minrow,xcol],bb[minrow,ycol]) %>%
+	matrix(., ncol=2, byrow=TRUE) %>%
+	list %>%
+	st_polygon %>%
+	st_sfc	%>%
+	st_sf(name=name, geometry=.) %>%
+	st_set_crs(crs) 
 }
 
-bb_loc %>%
-	bb_to_poly %>%
-	list %>%
-	st_polygon %>%
-	st_sfc %>%
-	st_set_crs("+proj=longlat +datum=WGS84") ->
-bb_loc_sf
-
-bb_brit %>%
-	bb_to_poly %>%
-	list %>%
-	st_polygon %>%
-	st_sfc %>%
-	st_set_crs("+proj=longlat +datum=WGS84") ->
-bb_brit_sf
-
-layout_test = ggplot() +
-	geom_sf(data=tibble("name"="brit_bb","geometry"=bb_brit_sf), fill="black") +
-	geom_sf(data=tibble("name"="loc_bb","geometry"=bb_loc_sf), fill="blue")
-
-
-# margins (inches)
-print_mar = 0.25
+bb_loc_sf = bb_to_poly(bb=bb_loc, name="peros")
+bb_brit_sf = bb_to_poly(bb=bb_brit, name="brit")
 
 # grid degrees (if we do grids)
 # change if we convert to UTM
@@ -245,30 +237,38 @@ myBreaks = function(x){
 }
 
 # limits of mapping region (in long and lat)
-lims = getbb(loc_name) %>% t %>% as.data.frame
+# lims = getbb(loc_name) %>% t %>% as.data.frame
 
-# issue: when using 	#crs = st_crs("+proj=utm +zone=30U +datum=WGS84 +units=km"), in coord_sf, lines disappear...
 # issue2: with long/lat, scale_x_continuous(breaks=myBreaks) gives error - invalid 'type' (closure) of argument
 
-# layout test for brit
-
-layout_test + theme_minimalmap() +
-	coord_sf(expand=FALSE, xlim = bb_brit[,1], ylim=bb_brit[,2])
-	
-# @ FIX: adding geom_sf(data=coast_gg, color=NA, fill=col_land) changes the coordinate system. Must research this more.
-	
-
+# britanny layout test!
 ggplot() + theme_minimalmap() +
+	geom_sf(data=bb_brit_sf, col=NA, fill="black") +
+	geom_sf(data=bb_loc_sf, col=NA, fill="red") +
+	geom_sf(data=coast_gg, color=NA, fill="white") + 
+	geom_sf(data=roads_gg, color="blue", fill=NA, size=0.01) + 
+	coord_sf(expand=FALSE, xlim = bb_brit[,1], ylim=bb_brit[,2])
+
+# ggsave(filename=
+	# paste0("../output/perros_testmap_", format(Sys.time(), "%Y%m%d_%H%M"), ".pdf"),
+	# width = width_in, height = height_in, units = "in"
+# )
+	
+	
+# continue refining the map/
+ggplot() + theme_minimalmap() +
+	geom_sf(data=bb_brit_sf, col=NA, fill=col_water) +
 	geom_sf(data=coast_gg, color=NA, fill=col_land)+
 	geom_sf(data=waterlines_gg, color=col_water, size=0.7)+
 	geom_sf(data=waterpolys_gg, fill=col_water, color=NA)+
-	geom_sf(data=roads_gg, color=col_road, size=0.001) +
-	coord_sf(expand=FALSE, xlim = lims[,1], ylim=lims[,2])
+	geom_sf(data=roads_gg, color=col_road, size=0.01) +
+	coord_sf(expand=FALSE, xlim = bb_brit[,1], ylim=bb_brit[,2])
 	# missing rails, diff road sizes, diff highway color...
 
 	
 # see how it looks as a png, with auto-selected dimensions for now:
 # filename includes date and time
 ggsave(filename=
-	paste0("../output/perros_testmap_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
+	paste0("../output/perros_testmap_", format(Sys.time(), "%Y%m%d_%H%M"), ".pdf"),
+	width = width_in, height = height_in, units = "in"
 )
