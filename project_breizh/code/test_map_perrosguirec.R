@@ -24,6 +24,7 @@ getbb(loc_name)
 # Import each road type as a separate object.
 # For details, see: http://wiki.openstreetmap.org/wiki/Map_Features
 
+## ROADS
 # see all available values within the key highway
 available_tags('highway')
 
@@ -43,7 +44,7 @@ roads_sfc
 # polygons end up in the roads because of connected lines like roundabouts.
 # let's combine these two categories and get rid of excess columns
 rbind(roads_sfc$osm_lines, roads_sfc$osm_polygons) %>%
-	select(highway, geometry) ->
+	select(highway) -> # geometry stays!
 roads_gg	
 # roads ready for ggplot
 
@@ -52,48 +53,73 @@ roads_gg %>%
 	ggplot(.) +
 		geom_sf(size=1, fill=NA, aes(color=highway)) + 
 		coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
+		
+### COASTLINE / LAND MASS
+# Let's try to get the coastline, seems to work best with admin_level 2 (federal boundaries...)
+loc_name %>%
+	opq(bbox = .) %>%
+	add_osm_feature(key = 'admin_level', value = '2') %>%
+	osmdata_sf() ->
+admin2_sfc
 
+# the osm_multilines for this seems to work well, but we need to make it a polygon...
+admin2_sfc$osm_multilines %>%
+	st_line_merge %>%
+	st_cast(x=., to="MULTIPOLYGON") ->
+coast_gg
+# @FIX: we may need to add points to define the end shape of the polygon, wait until we are plotting britanny to see fix...
 
-	
-# Let's try to get the coastline
-# @FIX: the following coast part needs to be updated for use with SF!
+# have a look
+ggplot() +
+	geom_sf(data = coast_gg, color="blue", fill="pink") +
+	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84")) 
+
+## RAILWAY
+loc_name %>%
+		opq(bbox = .) %>%
+		add_osm_feature(key = 'railway') %>%
+		osmdata_sf() ->
+rails_sfc
+
+rails_sfc$osm_lines %>%
+		select(railway) ->
+rails_gg
+
+ggplot() +
+	geom_sf(data=roads_gg, size=0.8, fill=NA, color='grey', alpha=0.8) + 
+	geom_sf(data=rails_sfc$osm_lines, size=1.1, fill=NA, color='black') +
+	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
+		
+# WATER
+
+loc_name %>%
+		opq(bbox = .) %>%
+		add_osm_feature(key = 'natural', value="water") %>%
+		osmdata_sf() ->
+water_sfc
+
+water_sfc$osm_polygons %>%
+	select(water) ->
+waterpolys_gg
 
 loc_name %>%
 	opq(bbox = .) %>%
-	add_osm_feature(key = 'natural', value = 'coastline') %>%
+	add_osm_feature(key = 'waterway') %>%
 	osmdata_sf() ->
-loc_coast_sf
+waterways_sfc
 
-# we want the coastline to be a polygon, but we will need a point for
-# the lowerlefthand (ll) corner. Let's extract coordinates from perros-g:
-loc_name %>%
-	getbb() %>%
-	.[,1] ->
-ll
-
-loc_coast_sf %>%
-	.$osm_lines %>%
-	# merge the 15 lines that make up the coast to one line:
-	gLineMerge() %>%
-	# make the lines a polygon
-	SpatialLines2PolySet() %>%
-	fortify %>%
-	tbl_df %>%
-	# just a hack for now, adding two points to make the poly a better shape
-	rbind(.,c(NA,NA,NA,ll[1],ll[2]),
-	c(NA,NA,NA,-3.39,ll[2])) ->
-loc_coast_poly
+rbind(
+	waterways_sfc$osm_multilines %>% select(water = waterway),
+	waterways_sfc$osm_lines %>% select(water=waterway)) ->
+waterlines_gg
 
 # so the data we have now is:
 # loc_coast_poly
-all_roads_sfcollection
-
-# we need to import classes of highways 1 by 1,
-# so that we can have diff. line thicknesses
-# see - # http://wiki.openstreetmap.org/wiki/Key:highway
-# we also need water, perhaps railways..
-# perhaps we also need to convert long/lat to UTMs
-
+roads_gg
+coast_gg # aka land
+rails_gg
+waterlines_gg
+waterpolys_gg
 # let's plot this....
 
 #########################################################
