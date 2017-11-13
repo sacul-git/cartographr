@@ -134,6 +134,68 @@ waterpolys_gg
 width_in = 24
 height_in = 18
 
+# desired long/lat sfor map of Britanny:
+xmin = -5.383
+xmax = -0.791
+ymax = 49.139
+xy
+# need ymin, must project to UTM first...
+xy = cbind(c(xmin, xmax), c(ymax, ymax))
+myProj = "+proj=utm +zone=30U +datum=WGS84 +units=km"
+xy_utm = rgdal::project(xy,myProj)
+
+xmin_utm = xy_utm[1,1]
+xmax_utm = xy_utm[2,1] 
+ymax_utm = xy_utm[2,2]
+
+height_utm = ((xmax_utm-xmin_utm)/width_in)*height_in
+ymin_utm = ymax_utm - height_utm
+xy_utm[1,2] = ymin_utm
+
+# britanny bounding box:
+xy_utm %>%
+	rgdal::project(myProj, inv=TRUE) %>%
+	`colnames<-`(c("x","y")) %>%
+	`rownames<-`(c("min","max")) ->
+bb_brit 
+
+loc_name %>%
+	getbb() %>% 
+	t ->
+bb_loc
+
+# a little function to take a bounding box in the format above, and make it coordinates for a polygon
+bb_to_poly = function(bb,minrow="min",maxrow="max",xcol="x",ycol="y"){
+	coords = c(
+		bb[minrow,xcol],bb[minrow,ycol],
+		bb[minrow,xcol],bb[maxrow,ycol],
+		bb[maxrow,xcol],bb[maxrow,ycol],
+		bb[maxrow,xcol],bb[minrow,ycol],
+		bb[minrow,xcol],bb[minrow,ycol])
+	matrix(coords, ncol=2, byrow=TRUE)
+}
+
+bb_loc %>%
+	bb_to_poly %>%
+	list %>%
+	st_polygon %>%
+	st_sfc %>%
+	st_set_crs("+proj=longlat +datum=WGS84") ->
+bb_loc_sf
+
+bb_brit %>%
+	bb_to_poly %>%
+	list %>%
+	st_polygon %>%
+	st_sfc %>%
+	st_set_crs("+proj=longlat +datum=WGS84") ->
+bb_brit_sf
+
+layout_test = ggplot() +
+	geom_sf(data=tibble("name"="brit_bb","geometry"=bb_brit_sf), fill="black") +
+	geom_sf(data=tibble("name"="loc_bb","geometry"=bb_loc_sf), fill="blue")
+
+
 # margins (inches)
 print_mar = 0.25
 
@@ -187,6 +249,14 @@ lims = getbb(loc_name) %>% t %>% as.data.frame
 
 # issue: when using 	#crs = st_crs("+proj=utm +zone=30U +datum=WGS84 +units=km"), in coord_sf, lines disappear...
 # issue2: with long/lat, scale_x_continuous(breaks=myBreaks) gives error - invalid 'type' (closure) of argument
+
+# layout test for brit
+
+layout_test + theme_minimalmap() +
+	coord_sf(expand=FALSE, xlim = bb_brit[,1], ylim=bb_brit[,2])
+	
+# @ FIX: adding geom_sf(data=coast_gg, color=NA, fill=col_land) changes the coordinate system. Must research this more.
+	
 
 ggplot() + theme_minimalmap() +
 	geom_sf(data=coast_gg, color=NA, fill=col_land)+
