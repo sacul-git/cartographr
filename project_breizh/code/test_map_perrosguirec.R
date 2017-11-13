@@ -10,6 +10,9 @@ new.libs = req.libs[!(req.libs %in% installed.packages()[, "Package"])]
 if (length(new.libs)) install.packages(new.libs)
 sapply(req.libs, require, character.only = TRUE)
 
+# note: need ggplot2 version  2.2.1.9000 or higher to use sf_geom. May need to install development version:
+# devtools::install_github("tidyverse/ggplot2")
+
 #########################################################
 #######                       GET THE MAP DATA                                #########
 #########################################################
@@ -121,6 +124,8 @@ rails_gg
 waterlines_gg
 waterpolys_gg
 # let's plot this....
+
+geom_sf
 
 #########################################################
 #####                                   PLOT & SAVE IMAGE                               ######
