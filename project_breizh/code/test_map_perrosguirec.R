@@ -125,8 +125,6 @@ waterlines_gg
 waterpolys_gg
 # let's plot this....
 
-geom_sf
-
 #########################################################
 #####                                   PLOT & SAVE IMAGE                               ######
 #########################################################
@@ -184,23 +182,20 @@ myBreaks = function(x){
 	breaks
 }
 
-##---- BASE MAP----##
-base_map = ggplot() + theme_minimalmap() #+
-		#coord_equal(expand = FALSE) +
-		# scale_y_continuous(breaks=myBreaks) +
-		# scale_x_continuous(breaks=myBreaks)
+# limits of mapping region (in long and lat)
+lims = getbb(loc_name) %>% t %>% as.data.frame
 
-# FINAL MAP, where we add the data:
-base_map +
-	# data:
-	#geom_polygon(data=loc_coast_poly,aes(x=X,y=Y),fill=col_land)+
-	#geom_path(data=loc_highway_lines,aes(x=long, y=lat, group=group),colour=col_road) +
-	geom_sf(data=roads_gg, aes(color=highway)) +
-	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
-	
+# issue: when using 	#crs = st_crs("+proj=utm +zone=30U +datum=WGS84 +units=km"), in coord_sf, lines disappear...
+# issue2: with long/lat, scale_x_continuous(breaks=myBreaks) gives error - invalid 'type' (closure) of argument
 
-	
-	
+ggplot() + theme_minimalmap() +
+	geom_sf(data=coast_gg, color=NA, fill=col_land)+
+	geom_sf(data=waterlines_gg, color=col_water, size=0.7)+
+	geom_sf(data=waterpolys_gg, fill=col_water, color=NA)+
+	geom_sf(data=roads_gg, color=col_road, size=0.001) +
+	coord_sf(expand=FALSE, xlim = lims[,1], ylim=lims[,2])
+	# missing rails, diff road sizes, diff highway color...
+
 	
 # see how it looks as a png, with auto-selected dimensions for now:
 # filename includes date and time
