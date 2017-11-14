@@ -2,8 +2,15 @@
 # Christmas 2017 Map of Brittany
 # By Lucas and Robyn
 
+#================#
+##################
+#NOTES TO DELETE #
+##################
+#================#
+#LG added rgdal to req.libs
+
 # required libraries:
-req.libs = c("tidyverse", "osmdata", "sf", "rgeos", "maptools","PBSmapping")
+req.libs = c("tidyverse", "osmdata", "sf", "rgeos", "maptools","PBSmapping", "rgdal")
 
 # load them, install if needed:
 new.libs = req.libs[!(req.libs %in% installed.packages()[, "Package"])]
@@ -13,13 +20,15 @@ sapply(req.libs, require, character.only = TRUE, quietly=TRUE)
 # note: need ggplot2 version  2.2.1.9000 or higher to use sf_geom. May need to install development version:
 # devtools::install_github("tidyverse/ggplot2")
 
-#====
-#  GET THE MAP DATA 
-#====
+#================#
+##################
+#  GET MAP DATA  #
+##################
+#================#
 
-# let's build a map with a smaller test location
+# let's build a map with a small test location:
 loc_name = "perros guirec, france"
-getbb(loc_name) 
+getbb(loc_name)
 
 # All road data: download location roads as sf (special features)
 # thanks to http://strimas.com/r/tidy-sf/ for the tutorial on SF in R
@@ -29,7 +38,9 @@ getbb(loc_name)
 # Ex: see all available values within the key highway
 # available_tags('highway')
 
-## ROADS
+#================#
+#      ROADS     #
+#================#
 # these are ordered by importance/size. see link above.
 target_vals = c('motorway', 'trunk', 'primary',
 	'secondary', 'tertiary', 'unclassified',
@@ -50,16 +61,20 @@ myCrs = roads_sfc$osm_lines %>% st_crs
 # let's combine these two categories and get rid of excess columns
 rbind(roads_sfc$osm_lines, roads_sfc$osm_polygons) %>%
 	select(highway) -> # geometry stays!
-roads_gg	
+roads_gg
 # roads ready for ggplot
 
 # have a look
 roads_gg %>%
 	ggplot(.) +
-		geom_sf(size=1, fill=NA, aes(color=highway)) + 
+		geom_sf(size=1, fill=NA, aes(color=highway)) +
 		coord_sf(crs = "+proj=utm +zone=30U +datum=WGS84")
-		
-### COASTLINE / LAND MASS
+
+#================#
+#   COASTLINE &  #
+#   LANDMASS     #
+#================#
+
 # Let's try to get the coastline, seems to work best with admin_level 2 (federal boundaries...)
 loc_name %>%
 	opq(bbox = .) %>%
@@ -77,9 +92,12 @@ coast_gg
 # have a look
 ggplot() +
 	geom_sf(data = coast_gg, color="blue", fill="pink") +
-	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84")) 
+	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
 
-## RAILWAY
+#================#
+#    RAILWAYS    #
+#================#
+
 loc_name %>%
 		opq(bbox = .) %>%
 		add_osm_feature(key = 'railway') %>%
@@ -91,11 +109,13 @@ rails_sfc$osm_lines %>%
 rails_gg
 
 ggplot() +
-	geom_sf(data=roads_gg, size=0.8, fill=NA, color='grey', alpha=0.8) + 
+	geom_sf(data=roads_gg, size=0.8, fill=NA, color='grey', alpha=0.8) +
 	geom_sf(data=rails_sfc$osm_lines, size=1.1, fill=NA, color='black') +
 	coord_sf(crs = st_crs("+proj=utm +zone=30U +datum=WGS84"))
-		
-# WATER
+
+#================#
+#      WATER     #
+#================#
 
 loc_name %>%
 		opq(bbox = .) %>%
@@ -127,16 +147,21 @@ waterlines_gg
 waterpolys_gg
 # let's plot this....
 
-#########################################################
-#####                                   PLOT & SAVE IMAGE                               ######
-#########################################################
+#================#
+##################
+#  PLOT & SAVE   #
+##################
+#================#
 
 # get the CRS from another sf object
 crsNorm = st_crs(waterpolys_gg)$proj4string
 # choose a projection that we will attempt to use to get a 24x18 image
 myProj = "+proj=utm +zone=30U +datum=WGS84"
 
-##---- SET OPTIONS ----##
+#================#
+#  SET OPTIONS   #
+#================#
+
 # Final dimensions (in inches)
 width_in = 24
 height_in = 18
@@ -144,7 +169,7 @@ height_in = 18
 # margins (inches)
 print_mar = 0.5
 
-# desired long/lat sfor map of Britanny (choosen manually on osm website):
+# desired long/lat sfor map of Britanny (chosen manually on osm website):
 xmin = -5.702
 xmax = -0.890
 ymax = 49.038
@@ -154,7 +179,7 @@ xy = cbind(c(xmin, xmax), c(ymax, ymax))
 xy_utm = rgdal::project(xy,myProj)
 
 xmin_utm = xy_utm[1,1]
-xmax_utm = xy_utm[2,1] 
+xmax_utm = xy_utm[2,1]
 ymax_utm = xy_utm[2,2]
 
 height_utm = ((xmax_utm-xmin_utm)/width_in)*height_in
@@ -166,10 +191,10 @@ xy_utm %>%
 	rgdal::project(myProj, inv=TRUE) %>%
 	`colnames<-`(c("x","y")) %>%
 	`rownames<-`(c("min","max")) ->
-bb_brit 
+bb_brit
 
 loc_name %>%
-	getbb() %>% 
+	getbb() %>%
 	t ->
 bb_loc
 
@@ -185,7 +210,7 @@ bb_to_poly = function(bb,minrow="min",maxrow="max",xcol="x",ycol="y",crs = crsNo
 	st_polygon %>%
 	st_sfc	%>%
 	st_sf(name=name, geometry=.) %>%
-	st_set_crs(crs) 
+	st_set_crs(crs)
 }
 
 bb_loc_sf = bb_to_poly(bb=bb_loc, name="peros")
@@ -245,16 +270,16 @@ myBreaks = function(x){
 ggplot() + theme_minimalmap() +
 	geom_sf(data=bb_brit_sf, col=NA, fill="black") +
 	geom_sf(data=bb_loc_sf, col=NA, fill="red") +
-	geom_sf(data=coast_gg, color=NA, fill="white") + 
-	geom_sf(data=roads_gg, color="blue", fill=NA, size=0.01) + 
+	geom_sf(data=coast_gg, color=NA, fill="white") +
+	geom_sf(data=roads_gg, color="blue", fill=NA, size=0.01) +
 	coord_sf(expand=FALSE, xlim = bb_brit[,1], ylim=bb_brit[,2])
 
 # ggsave(filename=
 	# paste0("../output/perros_testmap_", format(Sys.time(), "%Y%m%d_%H%M"), ".pdf"),
 	# width = width_in, height = height_in, units = "in"
 # )
-	
-	
+
+
 # continue refining the map/
 ggplot() + theme_minimalmap() +
 	geom_sf(data=bb_brit_sf, col=NA, fill=col_water) +
@@ -265,7 +290,7 @@ ggplot() + theme_minimalmap() +
 	coord_sf(expand=FALSE, xlim = bb_brit[,1], ylim=bb_brit[,2])
 	# missing rails, diff road sizes, diff highway color...
 
-	
+
 # see how it looks as a png, with auto-selected dimensions for now:
 # filename includes date and time
 ggsave(filename=
