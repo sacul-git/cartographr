@@ -2,13 +2,6 @@
 # Christmas 2017 Map of Brittany
 # By Lucas and Robyn
 
-#================#
-##################
-#NOTES TO DELETE #
-##################
-#================#
-#LG added rgdal to req.libs
-
 # required libraries:
 req.libs = c("tidyverse", "osmdata", "sf", "rgeos", "maptools","PBSmapping", "rgdal")
 
