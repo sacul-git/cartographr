@@ -1,7 +1,7 @@
 '''
 CARTOGRAPY: A script for making pretty maps in a python2 environment. Created by Robyn and Lucas.
 
-!!First steps first!! Make sure to change the current working directory to the proper place!
+!!First steps first!! Make sure this is run from the working directory where you want your files saved
 
 For details on individual tags:
     http://wiki.openstreetmap.org/wiki/Map_Features
@@ -17,7 +17,7 @@ from geopy.geocoders import Nominatim
 import os
 import shutil
 
-# For Any given City
+# Choose the city you want mapped. For small-ish geographic regions, we plot lots of roads. Doesn't make sense for larger areas (it would just be a blob.)
 city = "Toronto"
 # Make a directory for the shapefiles and one for the output
 # Make sure that your terminal is running where you want your files!
@@ -28,7 +28,6 @@ if not os.path.exists(wd_output):
     os.makedirs(os.path.join(home_dir, 'cartograpy', city, 'output'))
 if not os.path.exists(wd_files):
     os.makedirs(os.path.join(home_dir, 'cartograpy', city, 'shapefiles'))
-
 os.chdir(wd_files)
 
 # Find the bounding box for city
@@ -43,9 +42,9 @@ q1 = 'way(' + str(south) + ',' + str(west) + ',' + \
     str(north) + ',' + str(east) + ') ['
 q2 = '"];(._;>;);out body;'
 
-# Download the data!! This can take a while
-# You may add any tags you want here.
-# See bottom of script for hints regarding downloading polygons from the OSM api
+# Download the data!! This can take a while.
+# You may add any tags you want here, just make sure you write them to your shapefile, or they won't actually do anything...
+# See bottom of script for hints regarding downloading polygons from the OSM api, but we aren't doing that here, just ways.
 trunk = api.query(q1 + '"highway"="trunk' + q2)
 motorway = api.query(q1 + '"highway"="motorway' + q2)
 primary = api.query(q1 + '"highway"="primary' + q2)
@@ -56,7 +55,7 @@ residential = api.query(q1 + '"highway"="residential' + q2)
 service = api.query(q1 + '"highway"="service' + q2)
 
 # Write the data to a shapefile
-# Again, see bottom of script for other shape types
+# Again, see bottom of script for other shape types, here we're just saving linestring shapefiles.
 schema = {'geometry': 'LineString', 'properties': {
     'Name': 'str:80', 'Type': 'str:80'}}
 shapeout = city + "_highway.shp"
@@ -85,7 +84,7 @@ with fiona.open(shapeout, 'w',
                 "name", "n/a"), 'Type': way.tags.get("highway", "n/a")}
             output.write({'geometry': line, 'properties': prop})
 
-# For some reason the projection is off right now...
+# TODO: For some reason the projection is off right now... Perhaps it has to do with the from_epsg argument of the shapefiles??
 m = Basemap(projection='merc', resolution='f',
             llcrnrlon=west, llcrnrlat=south,
             urcrnrlon=east, urcrnrlat=north)
@@ -101,7 +100,7 @@ plt.savefig(os.path.join(wd_output,  city + '.pdf'),
             bbox_inches='tight', pad_inches=1)
 
 os.chdir(home_dir)
-# Be careful: removing the directory that your shapecity files are in
+# !!! Be careful: removing the directory that your shapecity files are in. Theoretically, this is a file that was created in this script, but just be aware, in case you changed the object wd_files, that it's going to be deleted on your computer with this here line:
 shutil.rmtree(wd_files)
 
 

@@ -1,9 +1,9 @@
 '''
-Cette carte de la Bretagne a ete creer pour Maman / Anne pour noel 2017. 
+Cette carte de la Bretagne a été crée pour Maman / Anne pour Noël 2017! Joyeux Noël!! 
 
-CARTOGRAPY: Un programme pour generer des jolies cartes avec python2. Ecrit par Robyn et Lucas.
+CARTOGRAPY: Un programme pour générer de jolies cartes avec python2. Écrit par Robyn et Lucas.
 
-!! D'abord!! Fait attention a changer le fichier de travail pour tout creer dans le bon fichier!
+!! Si quelqu'un essaye de reproduire cette carte: Tout d'abord, faites attention de changer le fichier de travail pour tout créer dans le bon fichier!
 
 Pour plus de details sur les types de routes, etc...:
     http://wiki.openstreetmap.org/wiki/Map_Features
@@ -13,9 +13,7 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 import fiona
 from fiona.crs import from_epsg
-from geopy.geocoders import Nominatim
 import os
-import shutil
 
 home_dir = os.getcwd()
 wd_output = os.path.join(home_dir, 'cartograpy', 'bretagne', 'output')
@@ -26,13 +24,13 @@ if not os.path.exists(wd_files):
     os.makedirs(wd_files)
 os.chdir(wd_files)
 
-# Inserer les coordonees de la Bretagne
+# Insérer les coordonées de la Bretagne
 north = 49.038 + 0.03
 east = -0.890
 west = -5.202 - 0.05
 south = 46.90437
 
-# Telecharger les donnees de "openstreetmap", si elles n'existent pas encore.
+# Télécharger les données de "openstreetmap", si elles n'existent pas encore.
 '''Pseudocode:
 if len(os.list files or whatever) < 1:
     do the following until '#Dessine la carte\' section
@@ -51,7 +49,7 @@ motorway_link = api.query(q1 + '"highway"="motorway_link' + q2)
 primary_link = api.query(q1 + '"highway"="primary_link' + q2)
 secondary_link = api.query(q1 + '"highway"="secondary_link' + q2)
 
-# Ecrire les donnees dans trois Shapefiles
+# Écrire les données dans trois Shapefiles
 schema = {'geometry': 'LineString', 'properties': {
     'Name': 'str:80', 'Type': 'str:80'}}
 shapeout = "bretagne_highway.shp"
@@ -94,7 +92,7 @@ with fiona.open(shapeout, 'w',
                 "name", "n/a"), 'Type': way.tags.get("highway", "n/a")}
             output.write({'geometry': line, 'properties': prop})
 
-# Dessine la carte
+# Dessiner la carte!
 m = Basemap(projection='tmerc', resolution='f',
             llcrnrlon=west, llcrnrlat=south,
             urcrnrlon=east, urcrnrlat=north,
