@@ -1,8 +1,6 @@
 '''
 CARTOGRAPY: A script for making pretty maps in a python2 environment. Created by Robyn and Lucas.
 
-!!First steps first!! Make sure this is run from the working directory where you want your files saved
-
 For details on individual tags:
     http://wiki.openstreetmap.org/wiki/Map_Features
 For details on how to make Polygons (or at least a starting point), see comments at bottom of script. Although honestly, I didn't get very far on that...
@@ -100,26 +98,7 @@ plt.savefig(os.path.join(wd_output,  city + '.pdf'),
             bbox_inches='tight', pad_inches=1)
 
 os.chdir(home_dir)
-# !!! Be careful: removing the directory that your shapecity files are in. Theoretically, this is a file that was created in this script, but just be aware, in case you changed the object wd_files, that it's going to be deleted on your computer with this here line:
+# !!! Be careful: removing the directory that your shapecity files are in. 
 shutil.rmtree(wd_files)
 
 
-# For information on Polygons, go here: http://wiki.openstreetmap.org/wiki/Area/The_Future_of_Areas
-
-# Making A Polygon:
-# schema = {'geometry': 'Polygon', 'properties': {'Name':'str:80', 'Type':'str:80'}}
-# shapeout = 'bretagne_forests.shp'
-# with fiona.open(shapeout, 'w', crs=from_epsg(4326), driver = 'ESRI Shapefile', schema = schema) as output:
-#     for way in forests.ways:
-#         poly = {'type': 'Polygon', 'coordinates': [[(node.lon, node.lat) for node in way.nodes]]}
-#         prop = {'Name': way.tags.get("name", "n/a"), 'Type': way.tags.get("waterway", "n/a")}
-#         output.write({'geometry': poly, 'properties':prop})
-
-# Making A Multipolygon from Relations
-# schema = {'geometry': 'MultiPolygon', 'properties': {'Name':'str:80', 'Type':'str:80'}}
-# shapeout = 'bretagne_forests.shp'
-# with fiona.open(shapeout, 'w', crs=from_epsg(4326), driver = 'ESRI Shapefile', schema = schema) as output:
-#     for way in forests.ways:
-#         poly = {'type': 'MultiPolygon', 'coordinates': [[(node.lon, node.lat) for node in way.nodes]]}
-#         prop = {'Name': way.tags.get("name", "n/a"), 'Type': way.tags.get("waterway", "n/a")}
-#         output.write({'geometry': poly, 'properties':prop})
