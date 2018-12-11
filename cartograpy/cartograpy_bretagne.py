@@ -31,66 +31,62 @@ west = -5.202 - 0.05
 south = 46.90437
 
 # Télécharger les données de "openstreetmap", si elles n'existent pas encore.
-'''Pseudocode:
-if len(os.list files or whatever) < 1:
-    do the following until '#Dessine la carte\' section
-'''
-api = overpy.Overpass()
-q1 = 'way(' + str(south) + ',' + str(west) + ',' + \
-    str(north) + ',' + str(east) + ') ['
-q2 = '"];(._;>;);out body;'
+if len(os.listdir(os.getcwd())) < 1:
+    api = overpy.Overpass()
+    q1 = 'way(' + str(south) + ',' + str(west) + ',' + \
+         str(north) + ',' + str(east) + ') ['
+    q2 = '"];(._;>;);out body;'
 
-trunk = api.query(q1 + '"highway"="trunk' + q2)
-motorway = api.query(q1 + '"highway"="motorway' + q2)
-primary = api.query(q1 + '"highway"="primary' + q2)
-secondary = api.query(q1 + '"highway"="secondary' + q2)
-trunk_link = api.query(q1 + '"highway"="trunk_link' + q2)
-motorway_link = api.query(q1 + '"highway"="motorway_link' + q2)
-primary_link = api.query(q1 + '"highway"="primary_link' + q2)
-secondary_link = api.query(q1 + '"highway"="secondary_link' + q2)
+    trunk = api.query(q1 + '"highway"="trunk' + q2)
+    motorway = api.query(q1 + '"highway"="motorway' + q2)
+    primary = api.query(q1 + '"highway"="primary' + q2)
+    secondary = api.query(q1 + '"highway"="secondary' + q2)
+    trunk_link = api.query(q1 + '"highway"="trunk_link' + q2)
+    motorway_link = api.query(q1 + '"highway"="motorway_link' + q2)
+    primary_link = api.query(q1 + '"highway"="primary_link' + q2)
+    secondary_link = api.query(q1 + '"highway"="secondary_link' + q2)
 
 # Écrire les données dans trois Shapefiles
-schema = {'geometry': 'LineString', 'properties': {
-    'Name': 'str:80', 'Type': 'str:80'}}
-shapeout = "bretagne_highway.shp"
-with fiona.open(shapeout, 'w',
-                crs=from_epsg(4326),
-                driver='ESRI Shapefile',
-                schema=schema) as output:
-    for result in [trunk, motorway, primary]:
-        for way in result.ways:
-            line = {'type': 'LineString', 'coordinates': [
-                (node.lon, node.lat) for node in way.nodes]}
-            prop = {'Name': way.tags.get(
-                "name", "n/a"), 'Type': way.tags.get("highway", "n/a")}
-            output.write({'geometry': line, 'properties': prop})
+    schema = {'geometry': 'LineString', 'properties': {
+        'Name': 'str:80', 'Type': 'str:80'}}
+    shapeout = "bretagne_highway.shp"
+    with fiona.open(shapeout, 'w',
+                    crs=from_epsg(4326),
+                    driver='ESRI Shapefile',
+                    schema=schema) as output:
+        for result in [trunk, motorway, primary]:
+            for way in result.ways:
+                line = {'type': 'LineString', 'coordinates': [
+                    (node.lon, node.lat) for node in way.nodes]}
+                prop = {'Name': way.tags.get(
+                    "name", "n/a"), 'Type': way.tags.get("highway", "n/a")}
+                output.write({'geometry': line, 'properties': prop})
 
-shapeout = "bretagne_road.shp"
-with fiona.open(shapeout, 'w',
-                crs=from_epsg(4326),
-                driver='ESRI Shapefile',
-                schema=schema) as output:
-    for result in [secondary, secondary_link]:
-        for way in result.ways:
-            line = {'type': 'LineString', 'coordinates': [
-                (node.lon, node.lat) for node in way.nodes]}
-            prop = {'Name': way.tags.get(
-                "name", "n/a"), 'Type': way.tags.get("highway", "n/a")}
-            output.write({'geometry': line, 'properties': prop})
+    shapeout = "bretagne_road.shp"
+    with fiona.open(shapeout, 'w',
+                    crs=from_epsg(4326),
+                    driver='ESRI Shapefile',
+                    schema=schema) as output:
+        for result in [secondary, secondary_link]:
+            for way in result.ways:
+                line = {'type': 'LineString', 'coordinates': [
+                    (node.lon, node.lat) for node in way.nodes]}
+                prop = {'Name': way.tags.get(
+                    "name", "n/a"), 'Type': way.tags.get("highway", "n/a")}
+                output.write({'geometry': line, 'properties': prop})
 
-shapeout = "bretagne_links.shp"
-with fiona.open(shapeout, 'w',
-                crs=from_epsg(4326),
-                driver='ESRI Shapefile',
-                schema=schema) as output:
-    for result in [trunk_link, motorway_link, primary_link]:
-        for way in result.ways:
-            # the shapefile geometry use (lon,lat)
-            line = {'type': 'LineString', 'coordinates': [
-                (node.lon, node.lat) for node in way.nodes]}
-            prop = {'Name': way.tags.get(
-                "name", "n/a"), 'Type': way.tags.get("highway", "n/a")}
-            output.write({'geometry': line, 'properties': prop})
+    shapeout = "bretagne_links.shp"
+    with fiona.open(shapeout, 'w',
+                    crs=from_epsg(4326),
+                    driver='ESRI Shapefile',
+                    schema=schema) as output:
+        for result in [trunk_link, motorway_link, primary_link]:
+            for way in result.ways:
+                line = {'type': 'LineString', 'coordinates': [
+                    (node.lon, node.lat) for node in way.nodes]}
+                prop = {'Name': way.tags.get(
+                    "name", "n/a"), 'Type': way.tags.get("highway", "n/a")}
+                output.write({'geometry': line, 'properties': prop})
 
 # Dessiner la carte!
 m = Basemap(projection='tmerc', resolution='f',
