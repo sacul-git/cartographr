@@ -13,6 +13,7 @@ Cartograpy is the python version of these scripts. It's set up to be run from th
 
 But first, it's important to note that cartograpy relies on some pretty finicky modules, and hasn't been tested on multiple versions. It works fine on:
 
+- `python` version `2.7.14`
 - `overpy` version `1.1`
 - `matplotlib` version `2.1.1`
 - `fiona` version `1.7.10`
