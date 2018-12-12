@@ -1,3 +1,5 @@
+# branch to try to create command line interface
+
 '''
 CARTOGRAPY: A script for making pretty maps in a python2 environment. Created by Robyn and Lucas.
 
@@ -98,7 +100,5 @@ plt.savefig(os.path.join(wd_output,  city + '.pdf'),
             bbox_inches='tight', pad_inches=1)
 
 os.chdir(home_dir)
-# !!! Be careful: removing the directory that your shapecity files are in. 
+# !!! Be careful: removing the directory that your shapecity files are in.
 shutil.rmtree(wd_files)
-
-
