@@ -28,7 +28,7 @@ parser.add_argument("-c", "--city", type=str,
                     default="Santa Barbara")
 # argument -r is for what road types we want to plot
 parser.add_argument("-r", "--roads", nargs="+", type=str,
-                    help="You can choose to plot: trunk roads, motorways, primary roads, secondary roads, tertiary roads, unclassified roads, residential roads, and/or service roads."
+                    help="You can choose to plot: trunk roads, motorways, primary roads, secondary roads, tertiary roads, unclassified roads, residential roads, and/or service roads.",
                     choices=road_types,
                     default=road_types)
 parser.add_argument("-e", "--extension", type=str,
