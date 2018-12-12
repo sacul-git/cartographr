@@ -2,8 +2,8 @@
 CARTOGRAPY: A script for making pretty maps in a python2 environment. Created by Robyn and Lucas.
 
 For details on individual tags:
-    http://wiki.openstreetmap.org/wiki/Map_Features
-For details on how to make Polygons (or at least a starting point), see comments at bottom of script. Although honestly, I didn't get very far on that...
+# http: // wiki.openstreetmap.org/wiki/Map_Features
+# For details on how to make Polygons(or at least a starting point), see comments at bottom of script. Although honestly, I didnt get very far on that...
 '''
 
 import argparse
