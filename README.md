@@ -19,6 +19,8 @@ But first, it's important to note that cartograpy relies on some pretty finicky 
 - `fiona` version `1.7.10`
 - `geopy` version `1.11.0`
 
+Note also that it depends on the now deprecated mpl_toolkits.basemap. I'll hopefully update soon to run on cartopy instead.
+
 ### cartograpy usage
 
 - Clone or download this repository from github
